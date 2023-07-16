@@ -17,6 +17,19 @@ const todo1 = {
 
 const todo2 = updateTodo(todo1, {title: 'javascript'});
 
+// 직접 타입 만들어보기
+type P<T> = { [P in keyof T]?: T[P] };
+// 원본
+type Partial<T> = {
+  [P in keyof T]?: T[P];
+};
+// 느낀점: [key in T] 이렇게 생각했는데 음 .. in과 keyof의 역할을 정확히 알아야겠다. keyof는 그냥 키로 내줄 뿐 in은 전부다 반복인가?
+// keyof 는 키값만 추출 in은 존재여부 맵드타입스는 반복해주는건가? ㅇㅇ 맞아 map과 같은 효과
+
+type Ex = string | number;
+const ex: Ex = 'hi';
+const ex2: Ex = 3;
+
 /**
  * Required<Type>
  *   타입의 모든 프로퍼티들을 필수사항으로 설정된 타입을 생성합니다.
@@ -145,41 +158,47 @@ const ee: E2 = {
   radius: 3,
 }
 
+/**
+ * NonNullable<Type>
+ *   Type 에서 null, undefined 를 제외합니다.
+ */
+
+type N0 = NonNullable<string | number | undefined>; // type N0 = string | number;
+type N1 = NonNullable<string[] | number [] | null | undefined>; // type N1 = string[], number[]
 
 
+/**
+ * Parameters<Type>
+ *   Type 에서 함수의 매개변수의 타입을 튜플로 생성합니다.
+ */
 
+declare function p1(arg: { a: number; b: string }): void;
 
+type P0 = Parameters<() => string>;   // type P0 = []
+type P1 = Parameters<(s: string) => void>; // type P1 = [string]
+type P2 = Parameters<<T>(arg: T) => T>; // type P2 = [T: unknown]
+type P3 = Parameters<typeof p1>;    // type P3 = [{number, string}]
+type P4 = Parameters<any>;
+type P5 = Parameters<never>;
+type P6 = Parameters<string>;
+type P7 = Parameters<Function>;
 
+/**
+ * ReturnType<Type>
+ *   Type 의 반환 값을 타입으로 생성합니다.
+ */
 
+declare function f1(): { a: number; b: string };
 
+type F0 = ReturnType<() => string>      // type F0 = string
+type F1 = ReturnType<(s: string) => void> // type F1 = void
+type F2 = ReturnType<<T>() => T>;       // type F2 = T: unknown
+type F3 = ReturnType<<T extends U, U extends number[]>() => T>  // type F3 = number[]
+type F4 = ReturnType<typeof f1>;        // type F4 = { a: number, b: string }
+function zip (x: number, y: string): {x: number, y: string} { return {x, y} }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+// 리턴 구현
+type R<T extends (...args: any) => any> = T extends (...args: any) => infer A ? A : never;
 
 
 

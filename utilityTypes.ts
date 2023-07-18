@@ -43,6 +43,14 @@ interface Props {
 const obj: Props = { a: 3 };
 const obj2: Required<Props> = { a: 3 };   // error
 
+//직접 타입 만들어보기
+type CustomRequired<T> = { [P in keyof T]-?: T[P] };
+//원본
+type Required<T> = {
+  [P in keyof T]-?: T[P];
+};
+
+
 /**
  * Awaited<Type>
  *   비동기 함수의 await, promise의 then() 메서드, 프로미스를 재귀적으로 언래핑합니다.
@@ -52,6 +60,30 @@ type B = Awaited<Promise<Promise<number>>>; // type B = number;
 type C = Awaited<boolean | Promise<number>>; // typeC = boolean | number;
 
 const aa: A = Promise.resolve(3); // '3' ? 이 나오나?
+const ccc = new Promise((resolve, reject) => {
+
+}).then()
+
+
+// 직접 만들기 ( Awaited는 어려워서 만들어진 코드를 참고하여 이해하는 식으로 했습니다.)
+type CustomAwaited<T> =
+  T extends null | undefined ? T:
+      T extends object & { then(onfullfilled: infer F, ...args: infer_): any } ?
+          F extends ((value: infer V, ...args: infer _) => any) ?
+              Awaited<V>:
+              never:
+          T;
+
+
+// 원본
+type Awaited<T> =
+    T extends null | undefined ? T : // special case for `null | undefined` when not in `--strictNullChecks` mode
+        T extends object & { then(onfulfilled: infer F, ...args: infer _): any } ? // `await` only unwraps object types with a callable `then`. Non-object types are not unwrapped
+            F extends ((value: infer V, ...args: infer _) => any) ? // if the argument to `then` is callable, extracts the first argument
+                Awaited<V> : // recursively unwrap the value
+                never : // the argument to `then` was not callable
+            T; // non-object or non-thenable
+
 
 /**
  * Readonly<Type>
@@ -63,7 +95,15 @@ interface Book{
 }
 
 const book: Readonly<Book> = { title: 'King', author: 'bigOne' };
-book.title = 'health'; // error: const 또는 readonly 변수에 할당을 시도합니다
+// book.title = 'health'; // error: const 또는 readonly 변수에 할당을 시도합니다
+
+// 타입 만들어보기
+type CustomReadonly<T> = { readonly [P in keyof T]: T[P] };
+
+// 원본
+type Readonly<T> = {
+  readonly [P in keyof T]: T[P];
+};
 
 /**
  * Record<Keys, Type>
@@ -82,6 +122,25 @@ const cats: { [key in CatName]: CatInfo} = {
   boris: {age: 10, breed: 'Persion'},
   mordred: {age: 10, breed: 'Persion'},
 }
+const cats2: Record<CatName, CatInfo> = {
+  miffy: {age: 10, breed: 'Persion'},
+  boris: {age: 10, breed: 'Persion'},
+  mordred: {age: 10, breed: 'Persion'},
+};
+// 타입 만들어보기
+type CustomRecord<T, P> = {
+  [S in keyof T]: P
+}
+
+type CustomRecord2<K extends keyof any, T> = {
+  [S in K]: T;
+};
+// 원본
+type Record<K extends keyof any, T> = {
+  [P in K]: T;
+};
+// 느낀점
+// 아 ,, , 프로퍼티의 Key로 쓸 값이 어떤 타입일지 모르는구나 .. 그래서 any이거 키로 쓰기위해 keyof를 사용
 
 /**
  * Pick<Type, Keys>
@@ -99,6 +158,20 @@ const trainer: SmallTraining = {
   completed: true,
   muscle: 37
 }
+
+// 타입 만들기
+type CustomPick<T, S extends keyof T> = {
+  [K in S]: T[S];
+};
+// type CustomPick<T, S extends keyof T> = {
+//   [K in S]: T[S]; // T[S]가 아닌 이유눈 ,, S는 "completed" | "muscle" 이고 K 가 "completed" 이다. 그러니 K가 맞지..
+// };
+
+
+//원본
+type Pick<T, K extends keyof T> = {
+  [P in K]: T[P];
+};
 
 /**
  * Omit<Type, Keys>
@@ -127,6 +200,10 @@ const noHobby: NoHobbyPerson = {
   age: 31,
 }
 
+type CustomOmit<T, S extends keyof any> = Pick<T, Exclude<keyof T, S>>;
+//원본
+type Omit<T, K extends keyof any> = Pick<T, Exclude<keyof T, K>>;
+
 /**
  * Exclude<UnionType, ExcludeMembers>
  *   UnionType 에서 제외할 멤버(ExcludeMembers) 를 지정하면 제외된 유니언타입을 생성합니다.
@@ -143,6 +220,13 @@ type T3 = Exclude<Shape, { kind: 'circle' }>
 
 const t: T3 = {kind: "square", x: 50};
 
+
+// 직접 구현하기
+type CustomExclude<T, U> = T extends U ? never : T;
+
+// 원본
+type Exclude<T, U> = T extends U ? never : T;
+
 /**
  * Extract<Type, Union>
  *   Type 중에 Union에 할당할 수 있는 모든 Union 멤버를 추출하여 생성합니다.
@@ -157,6 +241,13 @@ const ee: E2 = {
   kind: 'circle',
   radius: 3,
 }
+
+
+type customExtract<T, U> = T extends U ? T : never;
+
+//원본
+type Extract<T, U> = T extends U ? T : never;
+
 
 /**
  * NonNullable<Type>
@@ -198,7 +289,35 @@ type F4 = ReturnType<typeof f1>;        // type F4 = { a: number, b: string }
 function zip (x: number, y: string): {x: number, y: string} { return {x, y} }
 
 // 리턴 구현
-type R<T extends (...args: any) => any> = T extends (...args: any) => infer A ? A : never;
+type Re<T extends (...args: any) => any> = T extends (...args: any) => infer A ? A : never;
+
+
+/**
+ * bind  구현하기
+ */
+
+interface CallableFunction extends Function {
+  // bind<T>(this: T, thisArg: ThisParameterType<T>): OmitThisParameter<T>
+};
+// type ThisParameterType<T> = T extends (this: infer U, ...args: never) => any ? U : unknown;
+// type OmitThisParameter<T> = unknown extends ThisParameterType<T> ? T : T extends (...args: infer A) => infer R ? (...args: A) => R : T;
+
+function Person1(age: number = 20){
+  this.age = age;
+  const hello = () => {
+    console.log(this.name, age);
+  }
+  hello();
+}
+
+const person2: { name: 'bigTwo' } = { name: 'bigTwo' };
+// type ThisParameterType<T> = person2 extends (this: infer U, ...args: never) => any ? U : unknown;
+const person3 = Person1.bind(person2, 60);
+// R 은 bind를 통한 새로운 객체
+//  A는 인자 60?
+//     T는 this값 person2 니가unknown 아님 그러니T 반환
+BoundFunctionCreate(Target, thisArg, args).// target는 새로 생성될 객체(타깃)? 아니면 새로운 함수의 디스?
+
 
 
 
